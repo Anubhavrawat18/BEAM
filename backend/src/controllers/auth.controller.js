@@ -50,9 +50,52 @@ export const signup = async (req, res) => {
   }
 };
 
-export const login = (req, res) => {
-  //
+export const login = async (req, res) => {
+  // get user input from the request body
+  if (!req.body) {
+    return res.status(400).json({ message: "Request body empty" });
+  }
+  const { email, password } = req.body;
+  try {
+    // check if this user exists in the database
+    const user = await User.findOne({ email });
+    // if the user does not exist
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Account does not exist. Sign up!" });
+    }
+    // now matching password
+    // one important thing to remember when working with encryption of passwords is that they are always hashed one way...you cannot decrypt the existing psswd in the db and then match...instead what you have to do it you take the user input password and then hash that too using the same key and then simpply compare if the input password is same as the account password
+
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json({ message: "Invalid Credentials" });
+    }
+
+    // else
+    generateToken(user._id, res);
+
+    res.status(200).json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      profilePic: user.profilePic,
+    });
+  } catch (error) {
+    console.log("Error in Login Controller", error.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
+
 export const logout = (req, res) => {
-  //
+  // while a user tries to logout all we have to do is just end the session and clear the cookies which has the jwt token
+  try {
+    // set the cookie to null and make it expire immediately
+    res.cookie("jwt", "", { maxAge: 0 });
+    return res.status(204).json({ message: "Logout Successfull" });
+  } catch (error) {
+    console.log("Error in Logout Controller");
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
