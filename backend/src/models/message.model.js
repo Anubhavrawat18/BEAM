@@ -18,7 +18,6 @@ const messageSchema = new mongoose.Schema(
 
     content: {
       text: { type: String },
-
       attachments: [
         {
           url: String,
